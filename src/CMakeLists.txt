@@ -1,5 +1,6 @@
 add_executable(${ProjectName}
-    main.c
+        main.cpp
+        PlayerTF16P.h
 )
 
 target_include_directories(${ProjectName} PRIVATE
