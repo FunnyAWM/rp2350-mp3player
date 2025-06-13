@@ -35,7 +35,7 @@
  * application requirements.
  *
  * THESE PARAMETERS ARE DESCRIBED WITHIN THE 'CONFIGURATION' SECTION OF THE
- * FreeRTOS API DOCUMENTATION AVAILABLE ON THE FreeRTOS.org WEB SITE.
+ * FreeRTOS API DOCUMENTATION AVAILABLE ON THE FreeRTOS.org WEBSITE.
  *
  * See http://www.freertos.org/a00110.html
  *----------------------------------------------------------*/
@@ -115,7 +115,7 @@
 #define configSUPPORT_PICO_SYNC_INTEROP         1
 #define configSUPPORT_PICO_TIME_INTEROP         1
 
-#include <assert.h>
+#include <cassert>
 /* Define to trap errors during development. */
 #define configASSERT(x)                         assert(x)
 
