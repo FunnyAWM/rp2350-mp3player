@@ -43,9 +43,11 @@ enum PlayerCommand {
             // 处理播放控制命令
             xSemaphoreTake(playerMutex, portMAX_DELAY);
             switch(cmd) {
+                // TODO
                 case CMD_PLAY: player.playTrack(1); break;
                 case CMD_PAUSE: player.pause(); break;
-                // TODO
+            default: ;
+
                 // ... 其他命令处理
             }
             xSemaphoreGive(playerMutex);
