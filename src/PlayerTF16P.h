@@ -92,7 +92,7 @@ public:
         sendCommand();
         uart_read_blocking(UART_NUMBER, received, 10);
         if (received[3] == 0x40) {
-            //Error Processing
+            //TODO Error Processing
             return;
         }
         ready = true;
