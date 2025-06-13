@@ -116,8 +116,9 @@
 #define configSUPPORT_PICO_TIME_INTEROP         1
 
 extern "C" {
-    #include <assert.h>
+#include <assert.h>
 }
+
 /* Define to trap errors during development. */
 #define configASSERT(x)                         assert(x)
 
