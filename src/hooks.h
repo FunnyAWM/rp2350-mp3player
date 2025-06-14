@@ -3,7 +3,6 @@
 
 #include "FreeRTOS.h"
 #include "FreeRTOSConfig.h"
-#include "task.h"
 
 #ifdef __cplusplus
 extern "C" {
