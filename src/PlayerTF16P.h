@@ -118,6 +118,7 @@ public:
         command[5] = (track & 0xFF00) >> 8;
         command[6] = track & 0x00FF;
         sendCommand();
+        playing = true;
     }
 
     void stop() {
