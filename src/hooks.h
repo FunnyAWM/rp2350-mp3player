@@ -14,11 +14,6 @@ extern "C" {
 void vApplicationGetTimerTaskMemory(StaticTask_t**, StackType_t**, uint16_t*);
 #endif
 
-// 被动空闲任务内存分配（条件编译）
-#if configUSE_PASSIVE_IDLE_HOOK == 1
-    void vApplicationGetPassiveIdleTaskMemory(StaticTask_t**, StackType_t**, uint32_t*, BaseType_t);
-#endif
-
 #ifdef __cplusplus
 }
 #endif

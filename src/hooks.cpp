@@ -18,8 +18,7 @@ void vApplicationStackOverflowHook(TaskHandle_t xTask, char* pcTaskName) {
 // 空闲任务内存分配
 void vApplicationGetIdleTaskMemory(StaticTask_t** ppxIdleTaskTCBBuffer,
                                    StackType_t** ppxIdleTaskStackBuffer,
-                                   uint16_t* puxIdleTaskStackSize)
-{
+                                   uint16_t* puxIdleTaskStackSize) {
     static StaticTask_t xIdleTaskTCB;
     static StackType_t uxIdleTaskStack[configMINIMAL_STACK_SIZE];
 
@@ -27,10 +26,6 @@ void vApplicationGetIdleTaskMemory(StaticTask_t** ppxIdleTaskTCBBuffer,
     *ppxIdleTaskStackBuffer = uxIdleTaskStack;
     *puxIdleTaskStackSize = configMINIMAL_STACK_SIZE;
 }
-
-#if configUSE_PASSIVE_IDLE_HOOK == 1
-
-#endif
 
 // 定时器任务内存分配
 #if configUSE_TIMERS == 1
