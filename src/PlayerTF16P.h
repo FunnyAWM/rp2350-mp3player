@@ -30,6 +30,8 @@ class PlayerTF16P {
     uint8_t UART_RX_PIN;
     uart_inst_t* UART_NUMBER;
     DeviceType device;
+    uint16_t track;
+    uint16_t volume;
     bool ready{};
     bool playing{};
 
@@ -57,7 +59,8 @@ class PlayerTF16P {
 
 public:
     PlayerTF16P(const uint8_t txPin, const uint8_t rxPin, uart_inst_t* uart)
-        : command(), UART_TX_PIN(txPin), UART_RX_PIN(rxPin), UART_NUMBER(uart), device() {
+        : command(), UART_TX_PIN(txPin), UART_RX_PIN(rxPin), UART_NUMBER(uart), device(), track(1), volume(10) {
+        setVolume(volume);
     }
 
     ~PlayerTF16P() = default;
@@ -105,6 +108,7 @@ public:
         if (volume < 0) {
             volume = 0;
         }
+        this->volume = volume;
         command[3] = VOLUME;
         command[4] = 0x00;
         command[5] = 0x00;
@@ -117,6 +121,7 @@ public:
         command[4] = 0x00;
         command[5] = (track & 0xFF00) >> 8;
         command[6] = track & 0x00FF;
+        this->track = track;
         sendCommand();
         playing = true;
     }
@@ -170,6 +175,14 @@ public:
         sendCommand();
         uart_read_blocking(UART_NUMBER, received, 10);
         return received[5] << 2 + received[6];
+    }
+
+    [[nodiscard]] uint16_t getVolume() const {
+        return volume;
+    }
+
+    [[nodiscard]] uint16_t getTrack() const {
+        return track;
     }
 };
 

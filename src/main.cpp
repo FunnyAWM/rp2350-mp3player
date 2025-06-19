@@ -57,16 +57,16 @@ void openLED(void* pvParameters) {
                     player.stop();
                     break;
                 case CMD_NEXT:
-                    // 实现下一曲逻辑
+                    player.playTrack(player.getTrack() + 1);
                     break;
                 case CMD_PREV:
-                    // 实现上一曲逻辑
+                    player.playTrack(player.getTrack() - 1);
                     break;
                 case CMD_VOL_UP:
-                    // 实现音量增加逻辑
+                    player.setVolume(player.getVolume() + 1);
                     break;
                 case CMD_VOL_DOWN:
-                    // 实现音量减少逻辑
+                    player.setVolume(player.getVolume() - 1);
                     break;
                 }
                 xSemaphoreGive(playerMutex);
@@ -103,6 +103,8 @@ void openLED(void* pvParameters) {
         // 其他按钮处理...
 
         // 栈溢出检测
+        // ReSharper disable once CppLocalVariableMayBeConst
+        // ReSharper disable once CppTooWideScopeInitStatement
         UBaseType_t wm = uxTaskGetStackHighWaterMark(nullptr);
         if (wm < 10) {
             // 处理栈溢出
@@ -121,7 +123,7 @@ void uiTimerCallback(TimerHandle_t xTimer) {
 }
 
 // 启动任务用于初始化调度器后的操作
-void startupTask(void* pvParameters) {
+[[noreturn]] void startupTask(void* pvParameters) {
     // 创建任务
     TaskHandle_t playerHandle, uiHandle;
     TaskHandle_t ledHandle;
@@ -129,7 +131,7 @@ void startupTask(void* pvParameters) {
     ret[0] = xTaskCreate(playerTask, "PLAYER", 1024, nullptr, 2, &playerHandle);
     ret[1] = xTaskCreate(uiTask, "UI", 1024, nullptr, 3, &uiHandle); // 栈增加到1024
     ret[2] = xTaskCreate(openLED, "LED", 256, nullptr, 4, &ledHandle);
-    for (BaseType_t val : ret) {
+    for (const BaseType_t val : ret) {
         if (val == pdFAIL) {
             panicBlink(5);
             while (true) {
@@ -137,6 +139,7 @@ void startupTask(void* pvParameters) {
         }
     }
     // 创建并启动定时器
+    // ReSharper disable once CppLocalVariableMayBeConst
     TimerHandle_t uiTimer = xTimerCreate("UI_Timer", pdMS_TO_TICKS(20),
                                          pdTRUE, nullptr, uiTimerCallback);
     ret[0] = xTimerStart(uiTimer, 0);
@@ -172,7 +175,7 @@ void startupTask(void* pvParameters) {
 
 
     // 创建启动任务
-    BaseType_t ret = xTaskCreate(startupTask, "STARTUP", 512, nullptr, 5, nullptr);
+    const BaseType_t ret = xTaskCreate(startupTask, "STARTUP", 512, nullptr, 5, nullptr);
 
     if (ret == pdFAIL) {
         panicBlink(5);
