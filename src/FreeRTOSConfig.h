@@ -42,11 +42,12 @@
 
 /* Scheduler Related */
 #define configUSE_PREEMPTION                    1
-#define configUSE_TICKLESS_IDLE                 1
+#define configUSE_TICKLESS_IDLE                 0
 #define configUSE_IDLE_HOOK                     0
 #define configUSE_TICK_HOOK                     0
 #define configTICK_RATE_HZ                      ( ( TickType_t ) 1000 )
 #define configMAX_PRIORITIES                    32
+#define configCPU_CLOCK_HZ                      120000000
 #define configMINIMAL_STACK_SIZE                ( configSTACK_DEPTH_TYPE ) 128
 
 #define configIDLE_SHOULD_YIELD                 1
@@ -58,7 +59,7 @@
 #define configUSE_COUNTING_SEMAPHORES           1
 #define configQUEUE_REGISTRY_SIZE               8
 #define configUSE_QUEUE_SETS                    1
-#define configUSE_TIME_SLICING                  1
+#define configUSE_TIME_SLICING                  0
 #define configUSE_NEWLIB_REENTRANT              0
 // todo need this for lwip FreeRTOS sys_arch to compile
 #define configENABLE_BACKWARD_COMPATIBILITY     1
@@ -76,7 +77,7 @@
 
 /* Hook function related definitions. */
 #define configCHECK_FOR_STACK_OVERFLOW          1
-#define configUSE_MALLOC_FAILED_HOOK            0
+#define configUSE_MALLOC_FAILED_HOOK            1
 #define configUSE_DAEMON_TASK_STARTUP_HOOK      0
 
 /* Run time and task stats gathering related definitions. */
@@ -115,6 +116,13 @@
 /* RP2040 specific */
 #define configSUPPORT_PICO_SYNC_INTEROP         1
 #define configSUPPORT_PICO_TIME_INTEROP         1
+#define configENABLE_FPU                        1
+#define configSYSTEM_CALL_STACK_SIZE            128
+#define configMAX_SYSCALL_INTERRUPT_PRIORITY    16
+#define configENABLE_MPU                        0
+#define configENABLE_TRUSTZONE                  0
+#define configRUN_FREERTOS_SECURE_ONLY          1
+
 
 #include <assert.h>
 

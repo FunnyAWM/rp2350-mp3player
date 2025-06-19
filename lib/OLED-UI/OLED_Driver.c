@@ -150,7 +150,6 @@ void OLED_WriteData(const uint8_t* Data, const uint8_t Count) {
   */
 void OLED_GPIO_Init(void) {
     /*在初始化前，加入适量延时，待OLED供电稳定*/
-    sleep_ms(200);
 
     i2c_init(I2C_HW, 400 * 1000);
     gpio_set_function(SDA, GPIO_FUNC_I2C);

@@ -1,59 +1,61 @@
 #include "hooks.h"
 #include "FreeRTOS.h"
-
-
+#include "task.h"
+#include "hardware/gpio.h"
+#include "pico/time.h"
+#include "public.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
-// 栈溢出检测钩子函数
-void vApplicationStackOverflowHook(TaskHandle_t xTask, char* pcTaskName) {
+void vApplicationStackOverflowHook(TaskHandle_t xTask, const char* pcTaskName) {
     (void)xTask;
     (void)pcTaskName;
-
-    // 这里添加栈溢出处理逻辑
-    // 例如：记录错误、重启系统或进入安全状态
-    for (;;); // 死循环，实际项目中应根据需求处理
+    for (;;) {
+        constexpr uint LED_PIN = PICO_DEFAULT_LED_PIN;
+        gpio_put(LED_PIN, true);
+        sleep_ms(500);
+        gpio_put(LED_PIN, false);
+        sleep_ms(500);
+    }
 }
 
-// 空闲任务内存分配
 void vApplicationGetIdleTaskMemory(StaticTask_t** ppxIdleTaskTCBBuffer,
                                    StackType_t** ppxIdleTaskStackBuffer,
                                    uint16_t* puxIdleTaskStackSize) {
     static StaticTask_t xIdleTaskTCB;
     static StackType_t uxIdleTaskStack[configMINIMAL_STACK_SIZE];
-
     *ppxIdleTaskTCBBuffer = &xIdleTaskTCB;
     *ppxIdleTaskStackBuffer = uxIdleTaskStack;
     *puxIdleTaskStackSize = configMINIMAL_STACK_SIZE;
 }
 
-// 定时器任务内存分配
 #if configUSE_TIMERS == 1
 void vApplicationGetTimerTaskMemory(StaticTask_t** ppxTimerTaskTCBBuffer,
                                     StackType_t** ppxTimerTaskStackBuffer,
                                     uint16_t* pulTimerTaskStackSize) {
-    // 静态分配定时器任务的TCB和栈内存
     static StaticTask_t xTimerTaskTCB;
     static StackType_t uxTimerTaskStack[configTIMER_TASK_STACK_DEPTH];
-
     *ppxTimerTaskTCBBuffer = &xTimerTaskTCB;
     *ppxTimerTaskStackBuffer = uxTimerTaskStack;
     *pulTimerTaskStackSize = configTIMER_TASK_STACK_DEPTH;
 }
-#endif // configUSE_TIMERS
+#endif
 
-// 被动空闲任务内存分配
+// 修改参数类型为 uint16_t*
 void vApplicationGetPassiveIdleTaskMemory(StaticTask_t** ppxIdleTaskTCBBuffer,
                                           StackType_t** ppxIdleTaskStackBuffer,
-                                          uint16_t* puxIdleTaskStackSize, // 改为uint16_t
-                                          BaseType_t xPassiveIdleTaskIndex) // 添加核心ID参数
+                                          uint16_t* puxIdleTaskStackSize,
+                                          BaseType_t xPassiveIdleTaskIndex)
 {
     static StaticTask_t xPassiveIdleTaskTCB;
     static StackType_t uxPassiveIdleTaskStack[configMINIMAL_STACK_SIZE];
-
     *ppxIdleTaskTCBBuffer = &xPassiveIdleTaskTCB;
     *ppxIdleTaskStackBuffer = uxPassiveIdleTaskStack;
     *puxIdleTaskStackSize = configMINIMAL_STACK_SIZE;
+}
+void vApplicationMallocFailedHook() {
+    panicBlink(6); // 或打印信息
+    while (true);
 }
 
 #ifdef __cplusplus

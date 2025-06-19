@@ -4,18 +4,17 @@
 #include "queue.h"
 #include "semphr.h"
 #include "timers.h"
-#include <cstdio>
 #include "pico/stdlib.h"
 #include "PlayerTF16P.h"
-#include "boards/pico.h"
 #include "../lib/OLED-UI/OLED_UI.h"
 #include "../lib/OLED-UI/OLED_UI_MenuData.h"
-
+#include "public.h"
+// extern "C" void vLaunch(void);
 // 播放器全局对象
 PlayerTF16P player(4, 5, uart1);
 
 // 同步机制
-SemaphoreHandle_t playerMutex; // 改为互斥锁
+SemaphoreHandle_t playerMutex; // 互斥锁
 QueueHandle_t playerCommandQueue; // 命令队列
 
 // 播放器控制命令枚举
@@ -29,11 +28,15 @@ enum PlayerCommand {
     CMD_VOL_DOWN
 };
 
-[[noreturn]] void playerTask(void* pvParameters) {
+void openLED(void* pvParameters) {
     constexpr uint LED_PIN = PICO_DEFAULT_LED_PIN;
     gpio_init(LED_PIN);
     gpio_set_dir(LED_PIN, GPIO_OUT);
+    gpio_put(LED_PIN, true); // 打开LED指示灯
+    vTaskDelete(nullptr); // 任务完成后删除自身
+}
 
+[[noreturn]] void playerTask(void* pvParameters) {
     // 初始化播放器
     player.begin(DeviceType::TFCARD);
 
@@ -41,28 +44,44 @@ enum PlayerCommand {
     while (true) {
         // 等待控制命令（带超时）
         if (xQueueReceive(playerCommandQueue, &cmd, pdMS_TO_TICKS(10))) {
-            // 处理播放控制命令
-            xSemaphoreTake(playerMutex, portMAX_DELAY);
-            switch (cmd) {
-            // TODO
-            case CMD_PLAY: player.playTrack(1);
-                break;
-            case CMD_PAUSE: player.pause();
-                break;
-            default: ;
-
-                // ... 其他命令处理
+            // 带超时的互斥锁获取
+            if (xSemaphoreTake(playerMutex, pdMS_TO_TICKS(20))) {
+                switch (cmd) {
+                case CMD_PLAY:
+                    player.playTrack(1);
+                    break;
+                case CMD_PAUSE:
+                    player.pause();
+                    break;
+                case CMD_STOP:
+                    player.stop();
+                    break;
+                case CMD_NEXT:
+                    // 实现下一曲逻辑
+                    break;
+                case CMD_PREV:
+                    // 实现上一曲逻辑
+                    break;
+                case CMD_VOL_UP:
+                    // 实现音量增加逻辑
+                    break;
+                case CMD_VOL_DOWN:
+                    // 实现音量减少逻辑
+                    break;
+                }
+                xSemaphoreGive(playerMutex);
             }
+        }
+
+        // 带超时的互斥锁获取用于音频处理
+        if (xSemaphoreTake(playerMutex, pdMS_TO_TICKS(10))) {
+            // 音频解码和播放处理
+            // 例如: player.audioProcess();
             xSemaphoreGive(playerMutex);
         }
 
-        // 音频解码和播放（受互斥锁保护）
-        xSemaphoreTake(playerMutex, portMAX_DELAY);
-        // 假设有音频处理循环函数
-        xSemaphoreGive(playerMutex);
-
-        // 适当延时让出CPU
-        vTaskDelay(pdMS_TO_TICKS(1));
+        // 让出CPU
+        vTaskDelay(pdMS_TO_TICKS(5));
     }
 }
 
@@ -74,14 +93,26 @@ enum PlayerCommand {
         OLED_UI_MainLoop();
 
         // 检测用户输入并发送播放命令
-        // TODO
-        // if(/* 用户按下播放按钮 */) {
-        //     PlayerCommand cmd = CMD_PLAY;
-        //     xQueueSend(playerCommandQueue, &cmd, 0);
-        // }
+        if (Key_GetEnterStatus()) {
+            PlayerCommand cmd = CMD_PLAY;
+            xQueueSend(playerCommandQueue, &cmd, 0);
+        } else if (Key_GetBackStatus()) {
+            PlayerCommand cmd = CMD_PAUSE;
+            xQueueSend(playerCommandQueue, &cmd, 0);
+        }
         // 其他按钮处理...
 
-        vTaskDelay(pdMS_TO_TICKS(10));
+        // 栈溢出检测
+        UBaseType_t wm = uxTaskGetStackHighWaterMark(nullptr);
+        if (wm < 10) {
+            // 处理栈溢出
+            panicBlink(7);
+            for (;;) {
+                // 错误处理
+            }
+        }
+
+        vTaskDelay(pdMS_TO_TICKS(20));
     }
 }
 
@@ -89,31 +120,66 @@ void uiTimerCallback(TimerHandle_t xTimer) {
     OLED_UI_InterruptHandler();
 }
 
+// 启动任务用于初始化调度器后的操作
+void startupTask(void* pvParameters) {
+    // 创建任务
+    TaskHandle_t playerHandle, uiHandle;
+    TaskHandle_t ledHandle;
+    BaseType_t ret[3];
+    ret[0] = xTaskCreate(playerTask, "PLAYER", 1024, nullptr, 2, &playerHandle);
+    ret[1] = xTaskCreate(uiTask, "UI", 1024, nullptr, 3, &uiHandle); // 栈增加到1024
+    ret[2] = xTaskCreate(openLED, "LED", 256, nullptr, 4, &ledHandle);
+    for (BaseType_t val : ret) {
+        if (val == pdFAIL) {
+            panicBlink(5);
+            while (true) {
+            }
+        }
+    }
+    // 创建并启动定时器
+    TimerHandle_t uiTimer = xTimerCreate("UI_Timer", pdMS_TO_TICKS(20),
+                                         pdTRUE, nullptr, uiTimerCallback);
+    ret[0] = xTimerStart(uiTimer, 0);
+    vTaskPrioritySet(xTimerGetTimerDaemonTaskHandle(), configMAX_PRIORITIES - 1);
+    if (ret[0] == pdFAIL) {
+        panicBlink(3);
+        while (true) {
+        }
+    }
+    // 启动任务完成后删除自身
+    vTaskDelete(nullptr);
+}
+
 [[noreturn]] int main() {
     stdio_init_all();
+
+    // 硬件初始化
+    gpio_init(PICO_DEFAULT_LED_PIN);
+    uart_init(uart1, 9600);
+    gpio_set_function(4, GPIO_FUNC_UART);
+    gpio_set_function(5, GPIO_FUNC_UART);
 
     // 创建同步机制
     playerMutex = xSemaphoreCreateMutex();
     playerCommandQueue = xQueueCreate(10, sizeof(PlayerCommand));
-
-    // 调整定时器守护任务优先级
-    vTaskPrioritySet(xTimerGetTimerDaemonTaskHandle(), 3);
-
-    // 创建任务
-    TaskHandle_t playerHandle, uiHandle;
-    xTaskCreate(playerTask, "PLAYER", 1024, nullptr, 3, &playerHandle); // 更高优先级
-    xTaskCreate(uiTask, "UI", 512, nullptr, 2, &uiHandle); // 中等优先级
-
-    // 创建定时器
-    TimerHandle_t uiTimer = xTimerCreate("UI_Timer", pdMS_TO_TICKS(20),
-                                         pdTRUE, nullptr, uiTimerCallback);
+    if (!playerMutex || !playerCommandQueue) {
+        // 提示初始化失败，比如点亮LED或打印错误信息
+        panicBlink(2);
+    }
 
 
-    // 设置核心亲和性（建议但不强制）
-    vTaskCoreAffinitySet(uiHandle, 1 << 0);
-    vTaskCoreAffinitySet(playerHandle, 1 << 1);
+    // 提高定时器守护任务优先级
 
+
+    // 创建启动任务
+    BaseType_t ret = xTaskCreate(startupTask, "STARTUP", 512, nullptr, 5, nullptr);
+
+    if (ret == pdFAIL) {
+        panicBlink(5);
+        while (true) {}
+    }
+    // 启动调度器
     vTaskStartScheduler();
-    xTimerStart(uiTimer, 0);
+    panicBlink(4);
     while (true); // 不应执行到这里
 }
