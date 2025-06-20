@@ -9,6 +9,8 @@
 #include "../lib/OLED-UI/OLED_UI.h"
 #include "../lib/OLED-UI/OLED_UI_MenuData.h"
 #include "public.h"
+#include "stream_decoder.h"
+
 // extern "C" void vLaunch(void);
 // 播放器全局对象
 PlayerTF16P player(4, 5, uart1);
@@ -75,6 +77,8 @@ void openLED(void* pvParameters) {
 
         // 带超时的互斥锁获取用于音频处理
         if (xSemaphoreTake(playerMutex, pdMS_TO_TICKS(10))) {
+            FLAC__StreamDecoder decoder;
+
             // 音频解码和播放处理
             // 例如: player.audioProcess();
             xSemaphoreGive(playerMutex);
@@ -123,16 +127,16 @@ void uiTimerCallback(TimerHandle_t xTimer) {
 }
 
 // 启动任务用于初始化调度器后的操作
-[[noreturn]] void startupTask(void* pvParameters) {
+void startupTask(void* pvParameters) {
     // 创建任务
     TaskHandle_t playerHandle, uiHandle;
     TaskHandle_t ledHandle;
     BaseType_t ret[3];
-    ret[0] = xTaskCreate(playerTask, "PLAYER", 1024, nullptr, 2, &playerHandle);
-    ret[1] = xTaskCreate(uiTask, "UI", 1024, nullptr, 3, &uiHandle); // 栈增加到1024
+    ret[0] = xTaskCreate(playerTask, "PLAYER", 4096, nullptr, 2, &playerHandle);
+    ret[1] = xTaskCreate(uiTask, "UI", 1536, nullptr, 3, &uiHandle); // 栈增加到1536
     ret[2] = xTaskCreate(openLED, "LED", 256, nullptr, 4, &ledHandle);
     for (const BaseType_t val : ret) {
-        if (val == pdFAIL) {
+        if (val != pdPASS) {
             panicBlink(5);
             while (true) {
             }
@@ -175,14 +179,15 @@ void uiTimerCallback(TimerHandle_t xTimer) {
 
 
     // 创建启动任务
-    const BaseType_t ret = xTaskCreate(startupTask, "STARTUP", 512, nullptr, 5, nullptr);
+    const BaseType_t ret = xTaskCreate(startupTask, "STARTUP", 1024, nullptr, 5, nullptr);
 
     if (ret == pdFAIL) {
         panicBlink(5);
-        while (true) {}
+        while (true) {
+        }
     }
     // 启动调度器
     vTaskStartScheduler();
     panicBlink(4);
-    while (true); // 不应执行到这里
+    while (true);
 }

@@ -86,7 +86,7 @@ void OLED_I2C_SendByte(const uint8_t Byte) {
     for (uint8_t i = 0; i < 8; i++) {
         /*使用掩码的方式取出Byte的指定一位数据并写入到SDA线*/
         /*两个!的作用是，让所有非零的值变为1*/
-        OLED_W_SDA(!!(Byte & (0x80 >> i)));
+        OLED_W_SDA(!!(Byte & 0x80 >> i));
         OLED_W_SCL(1); //释放SCL，从机在SCL高电平期间读取SDA
         OLED_W_SCL(0); //拉低SCL，主机开始发送下一位数据
     }
@@ -191,50 +191,35 @@ void OLED_Clear(void);
   * 说    明：使用前，需要调用此初始化函数
   */
 void OLED_Init(void) {
-    OLED_GPIO_Init(); //先调用底层的端口初始化
+    OLED_GPIO_Init();
 
-    /*写入一系列的命令，对OLED进行初始化配置*/
-    OLED_WriteCommand(0xAE); //设置显示开启/关闭，0xAE关闭，0xAF开启
+    OLED_WriteCommand(0xAE); // 打开显示
 
-    OLED_WriteCommand(0xD5); //设置显示时钟分频比/振荡器频率
-    OLED_WriteCommand(0xf0); //0x00~0xFF
+    OLED_WriteCommand(0xD5); OLED_WriteCommand(0x80);
+    OLED_WriteCommand(0xA8); OLED_WriteCommand(0x3F);
+    OLED_WriteCommand(0xD3); OLED_WriteCommand(0x00);
+    OLED_WriteCommand(0x40);
 
-    OLED_WriteCommand(0xA8); //设置多路复用率
-    OLED_WriteCommand(0x3F); //0x0E~0x3F
+    OLED_WriteCommand(0xA1); // Segment remap
+    OLED_WriteCommand(0xC8); // COM scan direction
 
-    OLED_WriteCommand(0xD3); //设置显示偏移
-    OLED_WriteCommand(0x00); //0x00~0x7F
+    OLED_WriteCommand(0xDA); OLED_WriteCommand(0x12); // COM pins config
+    OLED_WriteCommand(0x81); OLED_WriteCommand(0x7F); // 对比度中等亮度
+    OLED_WriteCommand(0xD9); OLED_WriteCommand(0xF1); // 预充电周期
+    OLED_WriteCommand(0xDB); OLED_WriteCommand(0x40); // 更适合 SSD1315
 
-    OLED_WriteCommand(0x40); //设置显示开始行，0x40~0x7F
+    OLED_WriteCommand(0xA4); // 全屏显示跟随内存
+    OLED_WriteCommand(0xA6); // 正常显示
 
-    OLED_WriteCommand(0xA1); //设置左右方向，0xA1正常，0xA0左右反置
+    // ⚠️ 不再使用充电泵命令：SSD1315 可能无效或导致无显示
+    // OLED_WriteCommand(0x8D); OLED_WriteCommand(0x14); // ⚠️ 建议注释掉
 
-    OLED_WriteCommand(0xC8); //设置上下方向，0xC8正常，0xC0上下反置
+    OLED_WriteCommand(0xAF); // 开启显示
 
-    OLED_WriteCommand(0xDA); //设置COM引脚硬件配置
-    OLED_WriteCommand(0x12);
-
-    OLED_WriteCommand(0x81); //设置对比度
-    OLED_WriteCommand(0xDF); //0x00~0xFF
-
-    OLED_WriteCommand(0xD9); //设置预充电周期
-    OLED_WriteCommand(0xF1);
-
-    OLED_WriteCommand(0xDB); //设置VCOMH取消选择级别
-    OLED_WriteCommand(0x30);
-
-    OLED_WriteCommand(0xA4); //设置整个显示打开/关闭
-
-    OLED_WriteCommand(0xA6); //设置正常/反色显示，0xA6正常，0xA7反色
-
-    OLED_WriteCommand(0x8D); //设置充电泵
-    OLED_WriteCommand(0x14);
-
-    OLED_WriteCommand(0xAF); //开启显示
-
-    OLED_Clear(); //清空显存数组
-    OLED_Update(); //更新显示，清屏，防止初始化后未显示内容时花屏
+    OLED_Clear();
+    OLED_Update();
 }
+
 
 /**
   * 函    数：将OLED显存数组更新到OLED屏幕

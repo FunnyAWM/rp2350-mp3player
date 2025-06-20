@@ -1,3 +1,5 @@
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_CXX_STANDARD 11)
 add_executable(${ProjectName}
         main.cpp
         hooks.cpp
@@ -7,12 +9,10 @@ add_executable(${ProjectName}
         ../lib/OLED-UI/OLED_UI.c
         ../lib/OLED-UI/OLED_UI_Driver.c
         ../lib/OLED-UI/OLED_UI_MenuData.c
-
 )
 
 target_include_directories(${ProjectName} PRIVATE
         ${CMAKE_CURRENT_LIST_DIR}
-        ${CMAKE_CURRENT_LIST_DIR}/../lib/OLED-UI
 )
 
 target_link_libraries(${ProjectName}
@@ -21,5 +21,4 @@ target_link_libraries(${ProjectName}
         hardware_uart
         FreeRTOS-Kernel-Heap4
 )
-
 pico_add_extra_outputs(${ProjectName})

@@ -7,7 +7,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-void vApplicationStackOverflowHook(TaskHandle_t xTask, const char* pcTaskName) {
+// ReSharper disable once CppParameterMayBeConstPtrOrRef
+void vApplicationStackOverflowHook(TaskHandle_t xTask, char* pcTaskName) {
     (void)xTask;
     (void)pcTaskName;
     for (;;) {
