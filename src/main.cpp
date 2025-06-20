@@ -77,7 +77,6 @@ void openLED(void* pvParameters) {
 
         // 带超时的互斥锁获取用于音频处理
         if (xSemaphoreTake(playerMutex, pdMS_TO_TICKS(10))) {
-            FLAC__StreamDecoder decoder;
 
             // 音频解码和播放处理
             // 例如: player.audioProcess();
@@ -129,14 +128,13 @@ void uiTimerCallback(TimerHandle_t xTimer) {
 // 启动任务用于初始化调度器后的操作
 void startupTask(void* pvParameters) {
     // 创建任务
-    TaskHandle_t playerHandle, uiHandle;
-    TaskHandle_t ledHandle;
+    TaskHandle_t playerHandle, uiHandle, ledHandle;
     BaseType_t ret[3];
     ret[0] = xTaskCreate(playerTask, "PLAYER", 4096, nullptr, 2, &playerHandle);
     ret[1] = xTaskCreate(uiTask, "UI", 1536, nullptr, 3, &uiHandle); // 栈增加到1536
     ret[2] = xTaskCreate(openLED, "LED", 256, nullptr, 4, &ledHandle);
     for (const BaseType_t val : ret) {
-        if (val != pdPASS) {
+        if (val == pdFAIL) {
             panicBlink(5);
             while (true) {
             }
@@ -153,6 +151,8 @@ void startupTask(void* pvParameters) {
         while (true) {
         }
     }
+    vTaskCoreAffinitySet(uiHandle, 0x01);
+    vTaskCoreAffinitySet(playerHandle, 1 << 1);
     // 启动任务完成后删除自身
     vTaskDelete(nullptr);
 }
@@ -179,7 +179,7 @@ void startupTask(void* pvParameters) {
 
 
     // 创建启动任务
-    const BaseType_t ret = xTaskCreate(startupTask, "STARTUP", 1024, nullptr, 5, nullptr);
+    const BaseType_t ret = xTaskCreate(startupTask, "STARTUP", 4096, nullptr, 5, nullptr);
 
     if (ret == pdFAIL) {
         panicBlink(5);
