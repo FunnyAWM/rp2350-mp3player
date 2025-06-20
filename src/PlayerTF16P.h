@@ -60,7 +60,6 @@ class PlayerTF16P {
 public:
     PlayerTF16P(const uint8_t txPin, const uint8_t rxPin, uart_inst_t* uart)
         : command(), UART_TX_PIN(txPin), UART_RX_PIN(rxPin), UART_NUMBER(uart), device(), track(1), volume(10) {
-        // setVolume(volume);
     }
 
     ~PlayerTF16P() = default;
